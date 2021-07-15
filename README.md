@@ -1,2 +1,2 @@
-# PyNA
-Interfacing Keysight PNA with Python
+# PyPNA
+Interfacing Keysight PNA with Python.
