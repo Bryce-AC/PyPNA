@@ -1,4 +1,5 @@
 # PyPNA
 Interfacing Keysight PNA with Python.
+This library is a work in progress.
 
-http://na.support.keysight.com/pna/help/latest/Programming/XComFinderSet.htm
+Commands from: http://na.support.keysight.com/pna/help/latest/Programming/XComFinderSet.htm
