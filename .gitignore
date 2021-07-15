@@ -95,3 +95,10 @@ modules.xml
 .idea/sonarlint
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm+all
+dist/PyPNA-0.1.0-py3-none-any.whl
+dist/PyPNA-0.1.0.tar.gz
+PyPNA.egg-info/dependency_links.txt
+PyPNA.egg-info/PKG-INFO
+PyPNA.egg-info/requires.txt
+PyPNA.egg-info/SOURCES.txt
+PyPNA.egg-info/top_level.txt
