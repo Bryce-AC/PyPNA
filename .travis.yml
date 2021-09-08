@@ -8,7 +8,7 @@ before_install:
   - pip install -U pip
 
 install:
-  - pip install -r requirements.txt
+  - pip install
 
 script: true
 #  - python -m unittest tests/multiplication_tests.py
