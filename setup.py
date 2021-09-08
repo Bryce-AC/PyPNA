@@ -28,8 +28,5 @@ setup(
     ],
     packages=["PyPNA"],
     include_package_data=True,
-    install_requires=["pyvisa",
-                      "matplotlib",
-                      "numpy"
-                      ]
+    install_requires=["pyvisa"]
 )
