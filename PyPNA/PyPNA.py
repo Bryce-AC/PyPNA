@@ -1,6 +1,5 @@
 import pyvisa
 
-
 class PyPNA:
     def __init__(self):
         self.rm = pyvisa.ResourceManager()
@@ -10,8 +9,14 @@ class PyPNA:
         self.pna = self.rm.open_resource(self.rm.list_resources()[0])
 
     def load_setup(self, csa_path):
-        self.pna.write("MMEM:LOAD '" + csa_path + "'")
+        self.pna.write(f"MMEM:LOAD '{csa_path}'")
 
     def print_id(self):
         self.pna.write("*IDN?")
         print(self.pna.read())
+
+    def get_sparam(self, s_param):
+        self.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
+        self.pna.write("FORM:DATA ASCII")
+        self.pna.write("CALC:DATA? SDATA")
+        data = self.pna.read()
