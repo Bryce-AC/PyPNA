@@ -1,4 +1,5 @@
 import pyvisa
+import numpy as np
 
 class PyPNA:
     def __init__(self):
@@ -20,3 +21,16 @@ class PyPNA:
         self.pna.write("FORM:DATA ASCII")
         self.pna.write("CALC:DATA? SDATA")
         data = self.pna.read()
+        data = data.split(',')
+        real = []
+        imag = []
+        for point in range(len(data)):
+            if point % 2 == 0:
+                real.append(float(data[point]))
+            else:
+                imag.append(float(data[point]))
+
+        real=np.array(real)
+        imag=np.array(imag)
+
+        return real+1j*imag
