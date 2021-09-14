@@ -2,7 +2,7 @@
 Interfacing Keysight PNA with Python.
 This library is a work in progress.
 
-Install: `pip install -i https://test.pypi.org/simple/PyPNA`
+Install: `pip install PyPNA`
 
 Commands from: http://na.support.keysight.com/pna/help/latest/Programming/XComFinderSet.htm
 
