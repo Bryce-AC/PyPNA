@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import time
 
-save_path=r"C:\Users\withawat-admin\Documents\PNA-Python-Repositories\sandbox"
+save_path=r"C:\Users\withawat-admin\Documents\PNA-Python-Repositories\sandbox\2021.09.22 - Edmond"
 
 #temp
 def get_sparam(pyna, s_param):
@@ -46,30 +46,33 @@ t=np.arange(0,ts*1001,ts)
 
 head="Frequency (GHz) s11_real s11_imag s21_real s21_imag"
 
-plt.style.use('dark_background')
+t0=time.time()
 
 #setup animated plot
 fig, (ax1,ax2) = plt.subplots(1,2)
 pos=np.array([0,0])
 vec=np.array([1,1])
-ln1, = ax1.plot([], [], color='lawngreen')
-ln2, = ax1.plot([], [], color='gold')
-ln3, = ax2.plot([], [], color='lawngreen')
-ln4, = ax2.plot([], [], color='gold')
-ax1.grid()
-ax2.grid()
+ln1, = ax1.plot([], [], 'r')
+ln2, = ax1.plot([], [], 'b')
+ln3, = ax2.plot([], [], 'r')
+ln4, = ax2.plot([], [], 'b')
+
+#take first measurment
+s21=get_sparam(pm,'S21')
+s11=get_sparam(pm,'S11')
+s21_save=np.column_stack((f,np.real(s11),np.imag(s11),np.real(s21),np.imag(s21)))
+filename="\paper_t=0.txt"
+np.savetxt(save_path+filename,s21_save,header=head)
+np.savetxt(save_path+r"\time.txt",np.array([t0]))
 
 def init():
     ax1.set_xlim(220, 330)
-    ax1.set_ylim(-10, 0)
+    ax1.set_ylim(-50, 0)
     ax1.set_xlabel("Frequency (GHz)")
     ax1.set_ylabel("Amplitude (dB)")
     ax1.set_title("Frequency Domain")
-    ax2.set_ylim(0, 0.17)
+    ax2.set_ylim(0, 0.06)
     ax2.set_xlim(0,ts*1001*1e9)
-    ax2.set_xlim(0,2*1e9)
-    #ax2.set_xlim(220, 330)
-    #ax2.set_ylim(-2000, 0)
     ax2.set_xlim(0,5)
     ax2.set_xlabel("Time (ns)")
     ax2.set_ylabel("Amplitude (a.u.)")
@@ -88,13 +91,16 @@ def update(frame):
 
     s21_save=np.column_stack((f,np.real(s11),np.imag(s11),np.real(s21),np.imag(s21)))
 
-    np.savetxt(save_path+"\latest_measurement.txt",s21_save,header=head)
+    t0=np.loadtxt(save_path+r"\time.txt")
+    t1=time.time()
+    print("Time Elapsed: "+str(t1-t0)+" s")
+    if (t1-t0)%60 < 0.3:
+        filename="\paper_t="+str(np.around(t1-t0,decimals=0))+".txt"
+        np.savetxt(r"C:\Users\withawat-admin\Documents\PNA-Python-Repositories\sandbox\2021.09.22 - Edmond"+filename,s21_save,header=head)
 
     #ifft
     ln1.set_data(f,20*np.log10(np.abs((s11))))
     ln2.set_data(f,20*np.log10(np.abs((s21))))
-    #ln3.set_data(f,np.unwrap(np.angle((s11))))
-    #ln4.set_data(f,np.unwrap(np.angle((s21))))
     ln3.set_data(t*1e9,(np.abs(np.fft.ifft(s11))))
     ln4.set_data(t*1e9,(np.abs(np.fft.ifft(s21))))
 
