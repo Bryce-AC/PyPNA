@@ -12,6 +12,9 @@ class PyPNA:
     def load_setup(self, csa_path):
         self.pna.write(f"MMEM:LOAD '{csa_path}'")
 
+    def clear_measurements(self):
+        self.pna.write(f"CALC:PAR:DEL:ALL")
+
     def print_id(self):
         self.pna.write("*IDN?")
         print(self.pna.read())

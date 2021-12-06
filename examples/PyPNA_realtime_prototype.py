@@ -7,8 +7,13 @@ import time
 save_path=r"C:\Users\withawat-admin\Documents\PNA-Python-Repositories\sandbox"
 
 #temp
+def load_setup(pyna,csa_path):
+    pyna.pna.write(f"MMEM:LOAD '{csa_path}'")
+    pyna.pna.write(f"CALC:PAR:DEL:ALL")
+
 def get_sparam(pyna, s_param):
-    pyna.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
+
+
     pyna.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
     pyna.pna.write("FORM:DATA ASCII")
     pyna.pna.write("CALC:DATA? SDATA")
@@ -25,8 +30,6 @@ def get_sparam(pyna, s_param):
     real=np.array(real)
     imag=np.array(imag)
 
-    #pyna.pna.write("CALC:PAR:DEL:ALL")
-
     return real+1j*imag
 
 #setup pna
@@ -34,7 +37,12 @@ pm = PyPNA.PyPNA()
 
 pm.connect()
 
-pm.load_setup('D:/harrys_setup.csa')
+# pm.load_setup('D:/harrys_setup.csa')
+#pm.load_setup('D:/pypna.csa')
+load_setup(pm,'D:/pypna.csa')
+
+pm.pna.write(f"CALC:PAR:EXT 'ch1_1', 'S11'")
+pm.pna.write(f"CALC:PAR:EXT 'ch1_2', 'S21'")
 
 pm.pna.timeout = 10000
 
@@ -61,7 +69,7 @@ ax2.grid()
 
 def init():
     ax1.set_xlim(220, 330)
-    ax1.set_ylim(-10, 0)
+    ax1.set_ylim(-30, 0)
     ax1.set_xlabel("Frequency (GHz)")
     ax1.set_ylabel("Amplitude (dB)")
     ax1.set_title("Frequency Domain")
@@ -79,8 +87,8 @@ def init():
     return ln1,ln2
 
 def update(frame):
-    s21=get_sparam(pm,'S21')
-    s11=get_sparam(pm,'S11')
+    s21=get_sparam(pm,'2')
+    s11=get_sparam(pm,'1')
 
     #pna
     #ln1.set_data(f,20*np.log10(np.abs(s11)))
@@ -97,6 +105,7 @@ def update(frame):
     #ln4.set_data(f,np.unwrap(np.angle((s21))))
     ln3.set_data(t*1e9,(np.abs(np.fft.ifft(s11))))
     ln4.set_data(t*1e9,(np.abs(np.fft.ifft(s21))))
+    
 
     #time.sleep(1)
 
