@@ -41,6 +41,12 @@ pm.connect()
 #pm.load_setup('D:/pypna.csa')
 load_setup(pm,'D:/pypna.csa')
 
+pm.pna.write("SENS:AVER ON")
+# pm.pna.write("SENS:AVER OFF")
+
+factor = 65536
+pm.pna.write(f"SENS:AVER:COUN {factor}")
+
 pm.pna.write(f"CALC:PAR:EXT 'ch1_1', 'S11'")
 pm.pna.write(f"CALC:PAR:EXT 'ch1_2', 'S21'")
 
