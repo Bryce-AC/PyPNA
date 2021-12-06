@@ -1,0 +1,11 @@
+              PyPNA is Getting a Revamp!
+========================================================
+Unify files from lab computer
+Efficiency improvements - update rate investigation
+Gui options for simplified plotting - limit adjustments
+Simulated result comparisons - path selected
+Averaging - toggle and averaging length
+Integrate frequency padding for smoother time domain
+Test-bed for students without access to lab
+Documentation, documentation, documentation
+Example files for development - scanning, display, etc
