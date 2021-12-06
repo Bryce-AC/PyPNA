@@ -16,11 +16,13 @@ class PyPNA:
         self.pna.write("*IDN?")
         print(self.pna.read())
 
-    def get_sparam(self, s_param):
-        self.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
-        self.pna.write("FORM:DATA ASCII")
-        self.pna.write("CALC:DATA? SDATA")
-        data = self.pna.read()
+    def get_sparam(pyna, s_param):
+
+        pyna.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
+        pyna.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
+        pyna.pna.write("FORM:DATA ASCII")
+        pyna.pna.write("CALC:DATA? SDATA")
+        data = pyna.pna.read()
         data = data.split(',')
         real = []
         imag = []
@@ -32,5 +34,7 @@ class PyPNA:
 
         real=np.array(real)
         imag=np.array(imag)
+
+        #pyna.pna.write("CALC:PAR:DEL:ALL")
 
         return real+1j*imag
