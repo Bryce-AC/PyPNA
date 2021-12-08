@@ -1,6 +1,5 @@
 import pyvisa
 import numpy as np
-
 class PyPNA:
     def __init__(self):
         self.rm = pyvisa.ResourceManager()
@@ -20,7 +19,6 @@ class PyPNA:
         print(self.pna.read())
 
     def get_sparam(pyna, s_param):
-
         pyna.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
         pyna.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
         pyna.pna.write("FORM:DATA ASCII")
@@ -34,10 +32,25 @@ class PyPNA:
                 real.append(float(data[point]))
             else:
                 imag.append(float(data[point]))
-
+    
         real=np.array(real)
         imag=np.array(imag)
 
-        #pyna.pna.write("CALC:PAR:DEL:ALL")
-
         return real+1j*imag
+
+    # turn averaging on/off with toggle boolean
+    def set_averaging(self, toggle):
+        if isinstance(toggle, bool):
+            if toggle:
+                self.pna.write("SENS:AVER ON")
+            else:
+                self.pna.write("SENS:AVER OFF")
+        else:
+            raise TypeError("set_averaging requires boolean toggle")
+
+    def set_averaging_factor(self, factor):
+        if isinstance(factor, int) and factor > 0 and factor < 65537:
+            self.pna.write(f"SENS:AVER:COUN {factor}")
+            print(f"Averaging factor set to {factor}")
+        else:
+            raise TypeError("Averaging factor must be int and within [1,65536].")

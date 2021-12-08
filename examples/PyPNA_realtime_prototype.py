@@ -6,6 +6,8 @@ import time
 
 save_path=r"C:\Users\withawat-admin\Documents\PNA-Python-Repositories\sandbox"
 
+t0=time.time()
+
 #temp
 def load_setup(pyna,csa_path):
     pyna.pna.write(f"MMEM:LOAD '{csa_path}'")
@@ -41,8 +43,16 @@ pm.connect()
 #pm.load_setup('D:/pypna.csa')
 load_setup(pm,'D:/pypna.csa')
 
+pm.pna.write("SENS:AVER ON")
+# pm.pna.write("SENS:AVER OFF")
+
+factor = 40
+pm.pna.write(f"SENS:AVER:COUN {factor}")
+
 pm.pna.write(f"CALC:PAR:EXT 'ch1_1', 'S11'")
+pm.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_1'")
 pm.pna.write(f"CALC:PAR:EXT 'ch1_2', 'S21'")
+pm.pna.write(f"DISP:WIND:TRAC2:FEED 'ch1_2'")
 
 pm.pna.timeout = 10000
 
@@ -87,6 +97,8 @@ def init():
     return ln1,ln2
 
 def update(frame):
+
+    t0=time.time()
     s21=get_sparam(pm,'2')
     s11=get_sparam(pm,'1')
 
@@ -94,20 +106,20 @@ def update(frame):
     #ln1.set_data(f,20*np.log10(np.abs(s11)))
     #ln2.set_data(f,20*np.log10(np.abs(s21)))
 
-    s21_save=np.column_stack((f,np.real(s11),np.imag(s11),np.real(s21),np.imag(s21)))
+    #s21_save=np.column_stack((f,np.real(s11),np.imag(s11),np.real(s21),np.imag(s21)))
 
-    np.savetxt(save_path+"\latest_measurement.txt",s21_save,header=head)
+    #np.savetxt(save_path+"\latest_measurement.txt",s21_save,header=head)
 
     #ifft
     ln1.set_data(f,20*np.log10(np.abs((s11))))
     ln2.set_data(f,20*np.log10(np.abs((s21))))
     #ln3.set_data(f,np.unwrap(np.angle((s11))))
-    #ln4.set_data(f,np.unwrap(np.angle((s21))))
+    #lln4.set_data(f,np.unwrap(np.angle((s21))))
     ln3.set_data(t*1e9,(np.abs(np.fft.ifft(s11))))
     ln4.set_data(t*1e9,(np.abs(np.fft.ifft(s21))))
     
 
-    #time.sleep(1)
+    print(1/(time.time()-t0))
 
     return ln1,ln2,ln3,ln4
 
