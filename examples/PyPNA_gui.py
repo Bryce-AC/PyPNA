@@ -3,16 +3,16 @@
 #           Harry Lees & Bryce Chung - Dec 2021           #
 ###########################################################
 
+import sys
+import time
+import os
+
 import PySide6.QtGui as qtg
 import PySide6.QtWidgets as qtw
 import PySide6.QtCore as qtc
 import PySide6.QtCharts as qtch
 import numpy as np
 import PyPNA
-
-import sys
-import time
-import os
 
 def dark_pal():
     # creats the dark mode color palette for the gui
@@ -44,15 +44,15 @@ class Form(qtw.QDialog):
 
         ######### change this to config file used on pna #########
         config_path='D:/pypna.csa'
-        self.pm.pna.load_setup(self.pm,config_path)
+        self.pm.load_setup(config_path)
 
         # sets default averaging factor to 1, by default averaging is off
         factor = 1
         self.pm.pna.write(f"SENS:AVER:COUN {factor}")
 
         # initialises s11 and s21 measurements
-        self.pm.pna.add_sparam(1)
-        self.pm.pna.add_sparam(2)
+        self.pm.add_sparam(1)
+        self.pm.add_sparam(2)
 
         # print device id on startup to check connection is actually to pna
         self.pm.print_id()
@@ -424,7 +424,7 @@ class Form(qtw.QDialog):
 
         #s11
         if self.s11==1:
-            s11=self.pm.get_sparam('1')
+            s11=self.pm.get_sparam(1)
             if self.norm_tog==1:
                 y_stream_a=20*np.log10(np.abs(s11))-20*np.log10(np.abs(self.s11_ref))
             else:
@@ -433,7 +433,7 @@ class Form(qtw.QDialog):
 
         #s21
         if self.s21==1:
-            s21=self.pm.get_sparam('2')
+            s21=self.pm.get_sparam(2)
             if self.norm_tog==1:
                 y_stream_b=20*np.log10(np.abs(s21))-20*np.log10(np.abs(self.s21_ref))
             else:
@@ -499,8 +499,8 @@ class Form(qtw.QDialog):
     def save_data(self):
         # saves pna data to text file
 
-        s11=self.pm.get_sparam('1')
-        s21=self.pm.get_sparam('2')
+        s11=self.pm.get_sparam(1)
+        s21=self.pm.get_sparam(2)
         f=np.linspace(220,330,1001)
         s11_re=np.real(s11)
         s11_im=np.imag(s11)

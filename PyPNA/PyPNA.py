@@ -8,7 +8,7 @@ class PyPNA:
         # returns: PyPNA object
 
         self.rm = pyvisa.ResourceManager()
-        self.channels_open=[]
+        self.channels_open=np.array([])
         self.pna = None
 
     def connect(self,device=0):
@@ -17,7 +17,7 @@ class PyPNA:
         # returns: None
 
         self.pna = self.rm.open_resource(self.rm.list_resources()[device])
-        self.pm.pna.timeout = 10000
+        self.pna.timeout = 10000
 
     def load_setup(self, csa_path):
         # writes "Load this calibration file" to pna
@@ -29,12 +29,12 @@ class PyPNA:
 
     def add_sparam(self, s_param):
         # creates and displays s-spar measurment on pna
-        # inputs: s_sparam, s11->1, s21->2
+        # inputs: s_sparam, int s11->1, s21->2
 
-        self.pm.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', 'S{s_param}1'")
-        self.pm.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_{s_param}'")
+        self.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', 'S{s_param}1'")
+        self.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_{s_param}'")
 
-        self.channels_open.append(s_param)
+        self.channels_open=np.append(self.channels_open,np.array(s_param))
 
     def clear_measurements(self):
         # erases all measurement objects from pna
@@ -42,7 +42,7 @@ class PyPNA:
         # returns: None
 
         self.pna.write(f"CALC:PAR:DEL:ALL")
-        self.channels_open=[]
+        self.channels_open=np.array([])
 
     def print_id(self):
         # Asks the current self.pna object (visa device connected to object) to identify, prints the ID
@@ -57,7 +57,7 @@ class PyPNA:
         # inputs: s_param - string (s11, s21)
         # returns: complex np array same length as s-par data
 
-        if s_param in self.channels_open:
+        if np.any(np.isin(self.channels_open,s_param)):
             self.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
             self.pna.write("FORM:DATA ASCII")
             self.pna.write("CALC:DATA? SDATA")
@@ -77,6 +77,8 @@ class PyPNA:
             return real+1j*imag
         else:
             print("S-param requested hasn't been added, use add_sparam(s_param) to open add it")
+            print(f"List: {self.channels_open}")
+            print(f"Requested: {s_param}")
 
     def set_averaging(self, toggle):
         # turn averaging on/off with toggle boolean
