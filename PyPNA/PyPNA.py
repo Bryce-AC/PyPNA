@@ -8,6 +8,7 @@ class PyPNA:
         # returns: PyPNA object
 
         self.rm = pyvisa.ResourceManager()
+        self.channels_open=[]
         self.pna = None
 
     def connect(self,device=0):
@@ -26,12 +27,22 @@ class PyPNA:
         self.pna.write(f"MMEM:LOAD '{csa_path}'")
         self.pna.write(f"CALC:PAR:DEL:ALL")
 
+    def add_sparam(self, s_param):
+        # creates and displays s-spar measurment on pna
+        # inputs: s_sparam, s11->1, s21->2
+
+        self.pm.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', 'S{s_param}1'")
+        self.pm.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_{s_param}'")
+
+        self.channels_open.append(s_param)
+
     def clear_measurements(self):
         # erases all measurement objects from pna
         # inputs: None
         # returns: None
 
         self.pna.write(f"CALC:PAR:DEL:ALL")
+        self.channels_open=[]
 
     def print_id(self):
         # Asks the current self.pna object (visa device connected to object) to identify, prints the ID
@@ -46,24 +57,26 @@ class PyPNA:
         # inputs: s_param - string (s11, s21)
         # returns: complex np array same length as s-par data
 
-        self.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', '{s_param}'")
-        self.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
-        self.pna.write("FORM:DATA ASCII")
-        self.pna.write("CALC:DATA? SDATA")
-        data = self.pna.read()
-        data = data.split(',')
-        real = []
-        imag = []
-        for point in range(len(data)):
-            if point % 2 == 0:
-                real.append(float(data[point]))
-            else:
-                imag.append(float(data[point]))
-    
-        real=np.array(real)
-        imag=np.array(imag)
+        if s_param in self.channels_open:
+            self.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
+            self.pna.write("FORM:DATA ASCII")
+            self.pna.write("CALC:DATA? SDATA")
+            data = self.pna.read()
+            data = data.split(',')
+            real = []
+            imag = []
+            for point in range(len(data)):
+                if point % 2 == 0:
+                    real.append(float(data[point]))
+                else:
+                    imag.append(float(data[point]))
+        
+            real=np.array(real)
+            imag=np.array(imag)
 
-        return real+1j*imag
+            return real+1j*imag
+        else:
+            print("S-param requested hasn't been added, use add_sparam(s_param) to open add it")
 
     def set_averaging(self, toggle):
         # turn averaging on/off with toggle boolean

@@ -1,3 +1,7 @@
+###########################################################
+#     GUI for displaying real time s-par measurements     #
+#           Harry Lees & Bryce Chung - Dec 2021           #
+###########################################################
 
 import PySide6.QtGui as qtg
 import PySide6.QtWidgets as qtw
@@ -7,38 +11,13 @@ import numpy as np
 import PyPNA
 
 import sys
-import random
 import time
 import os
 
-def load_setup(pyna,csa_path):
-    pyna.pna.write(f"MMEM:LOAD '{csa_path}'")
-    pyna.pna.write(f"CALC:PAR:DEL:ALL")
-
-def get_sparam(pyna, s_param):
-
-
-    pyna.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
-    pyna.pna.write("FORM:DATA ASCII")
-    pyna.pna.write("CALC:DATA? SDATA")
-    data = pyna.pna.read()
-    data = data.split(',')
-    real = []
-    imag = []
-    for point in range(len(data)):
-        if point % 2 == 0:
-            real.append(float(data[point]))
-        else:
-            imag.append(float(data[point]))
-
-    real=np.array(real)
-    imag=np.array(imag)
-
-    return real+1j*imag
-
 def dark_pal():
-    dark_palette = qtg.QPalette()
+    # creats the dark mode color palette for the gui
 
+    dark_palette = qtg.QPalette()
     dark_palette.setColor(qtg.QPalette.Window, qtg.QColor(53, 53, 53))
     dark_palette.setColor(qtg.QPalette.WindowText, qtc.Qt.white)
     dark_palette.setColor(qtg.QPalette.Base, qtg.QColor(25, 25, 25))
@@ -56,7 +35,6 @@ def dark_pal():
     return dark_palette
 
 class Form(qtw.QDialog):
-
     def __init__(self,parent=None):
         #setup pna
         ## pna setup
@@ -64,22 +42,22 @@ class Form(qtw.QDialog):
 
         self.pm.connect()
 
-        # pm.load_setup('D:/harrys_setup.csa')
-        #pm.load_setup('D:/pypna.csa')
-        load_setup(self.pm,'D:/pypna.csa')
+        ######### change this to config file used on pna #########
+        config_path='D:/pypna.csa'
+        self.pm.pna.load_setup(self.pm,config_path)
 
+        # sets default averaging factor to 1, by default averaging is off
         factor = 1
         self.pm.pna.write(f"SENS:AVER:COUN {factor}")
 
-        self.pm.pna.write(f"CALC:PAR:EXT 'ch1_1', 'S11'")
-        self.pm.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_1'")
-        self.pm.pna.write(f"CALC:PAR:EXT 'ch1_2', 'S21'")
-        self.pm.pna.write(f"DISP:WIND:TRAC2:FEED 'ch1_2'")
+        # initialises s11 and s21 measurements
+        self.pm.pna.add_sparam(1)
+        self.pm.pna.add_sparam(2)
 
-        self.pm.pna.timeout = 10000
-
+        # print device id on startup to check connection is actually to pna
         self.pm.print_id()
 
+        # setup window for gui
         super(Form,self).__init__(parent)
         self.setWindowTitle("")
         self.setWindowFlags(qtc.Qt.WindowMinMaxButtonsHint | qtc.Qt.WindowCloseButtonHint)
@@ -87,7 +65,7 @@ class Form(qtw.QDialog):
         hw=900
         self.resize(hw*rat,hw)
 
-        #default settings
+        #### default settings ####
         self.avg=0
         self.padding=0
         self.s11=1
@@ -96,7 +74,7 @@ class Form(qtw.QDialog):
         self.x_stream_td=np.linspace(0,1001,1001)
         self.meas_fps=0
 
-        #interface
+        #### interface - adding in all the buttons and inputs ####
         self.add_bt= qtw.QPushButton("Add Comparison (.npy or .txt)")
         self.norm_bt= qtw.QPushButton("Add Normalisation")
         self.norm_enable_check=qtw.QCheckBox()
@@ -134,37 +112,29 @@ class Form(qtw.QDialog):
         self.s21_bt.setMaximumWidth(self.bt_size*1.5)
         self.s11_bt.setMaximumWidth(self.bt_size*1.5)
 
+
+        # initialise frequency domain chart
         self.graph_fd = qtch.QChart()
         self.graph_fd.setTitle("Frequency Domain")
-        #self.graph_fd.setAnimationOptions(qtch.QChart.AllAnimations)
         self.chart_view_fd=qtch.QChartView(self.graph_fd)
         self.chart_view_fd.setRenderHint(qtg.QPainter.Antialiasing)
         self.chart_view_fd.chart().setTheme(qtch.QChart.ChartThemeDark)
 
+        # initialise time domain chart
         self.graph_td = qtch.QChart()
         self.graph_td.setTitle("Time Domain")
-        #self.graph_td.setAnimationOptions(qtch.QChart.AllAnimations)
         self.chart_view_td=qtch.QChartView(self.graph_td)
         self.chart_view_td.setRenderHint(qtg.QPainter.Antialiasing)
         self.chart_view_td.chart().setTheme(qtch.QChart.ChartThemeDark)
         
-        #timer
+        # initialise update properties - time unit is ms - default fps is 5 for s11/s21 simulatenously
         self.timer=qtc.QTimer()
         self.fps=5
         self.timer.setInterval(1000/self.fps)
         self.timer.start()
         self.t0=time.time()
 
-        #old
-        #layout= qtw.QVBoxLayout(self)
-        #layout.addWidget(self.add_bt)
-        #layout.addWidget(self.chart_view_fd)
-        #layout.addWidget(self.chart_view_td)
-        #layout.addWidget(self.clear_bt)
-        #layout.addWidget(self.ylim_min_in_fd)
-        #layout.addWidget(self.ylim_max_in_fd)
-
-        #new
+        #### layout GUI ####
         layout=qtw.QGridLayout(self)
         
         #charts
@@ -177,7 +147,7 @@ class Form(qtw.QDialog):
         layout.addWidget(self.s11_bt,sel_start+1,0,1,1)
         layout.addWidget(self.s21_bt,sel_start+1,2,1,1)
 
-        #fd buttons
+        # fd buttons
         fd_start=3
         layout.addWidget(qtw.QLabel("<b>FD Plot Setting</b>"),fd_start,0,1,3,qtc.Qt.AlignCenter)
         layout.addWidget(qtw.QLabel("FD x-Lim"),fd_start+1,0)
@@ -194,7 +164,7 @@ class Form(qtw.QDialog):
         layout.addWidget(self.avg_bt,fd_start+7,0,1,2)
         layout.addWidget(self.avg_factor,fd_start+7,2)
         
-        #td buttons
+        # td buttons
         td_start=(fd_start+7)+1
         layout.addWidget(qtw.QLabel("<b>TD Plot Setting</b>"),td_start,0,1,3,qtc.Qt.AlignCenter)
         layout.addWidget(qtw.QLabel("TD x-Lim"),td_start+1,0)
@@ -213,8 +183,8 @@ class Form(qtw.QDialog):
 
         self.setLayout(layout)
 
-        #slots and signals
-        self.add_bt.clicked.connect(self.confirm)
+        #### slots and signals - each button needs to be connected to a function which activates on button press ####
+        self.add_bt.clicked.connect(self.add_from_file)
         self.clear_bt.clicked.connect(self.clear)
         self.ylim_min_in_fd.textChanged.connect(self.change_lim)
         self.ylim_max_in_fd.textChanged.connect(self.change_lim)
@@ -235,13 +205,7 @@ class Form(qtw.QDialog):
         self.s11_bt.clicked.connect(self.s11_tog)
         self.s21_bt.clicked.connect(self.s21_tog)
 
-        #TO-DO
-        #norm add norm
-        #norm checkbox
-        #save button
-        #avg
-        
-        ### Frequency Domain Plot
+        ### Configure Frequency Domain Plot Options ###
         self.axis_x = qtch.QValueAxis()
         self.axis_x.setTickCount(10)
         self.axis_x.setTitleText("Frequency (GHz)")
@@ -274,13 +238,12 @@ class Form(qtw.QDialog):
         self.data_stream_series_b.attachAxis(self.axis_x)
         self.data_stream_series_b.attachAxis(self.axis_y)
 
-        # Initialise normalisation
+        ### A few variables need to be initialised for normalisation
         self.norm_tog=0
         self.s11_ref=np.zeros(1001,dtype="complex")
         self.s21_ref=np.zeros(1001,dtype="complex")
 
-        ### Time Domain Plot
-
+        ### Configure Frequency Domain Plot Options ###
         self.axis_x_td = qtch.QValueAxis()
         self.axis_x_td.setTickCount(10)
         self.axis_x_td.setTitleText("Time Sample")
@@ -310,10 +273,19 @@ class Form(qtw.QDialog):
         self.data_stream_series_d.attachAxis(self.axis_x_td)
         self.data_stream_series_c.attachAxis(self.axis_y_td)
 
-    def confirm(self):
+    def add_from_file(self):
+        # this function adds s-parameters to the chart
+        # inputs: none
+        # returns: none
+
+
+        #opens a query window for a path
         self.plot_path,_=qtw.QFileDialog.getOpenFileName(self, "Select File")
-        #self.graph.setTitle(self.plot_path)
+        
+        # check path is entered
         if self.plot_path != '':
+
+            # I save data commonly as npy so that is supported
             if self.plot_path.endswith(".npy"):
                 #numpy case
                 data=np.load(self.plot_path)
@@ -347,6 +319,8 @@ class Form(qtw.QDialog):
                 self.series.attachAxis(self.axis_y)
 
             if self.plot_path.endswith(".txt"):
+                # this handles the loading of .txt data (data saved by this gui is .txt data)
+
                 data=np.loadtxt(self.plot_path,skiprows=1)
                 self.xdata_=np.abs(data[:,0])
                 self.ydata_=20*np.log10(np.abs(data[:,1]+1j*data[:,2]))
@@ -409,6 +383,9 @@ class Form(qtw.QDialog):
                     pass
              
     def clear(self):
+        # removes all plots from the gui leaving an empty chart, 
+        # until next refresh when data is loaded from pna
+
         for si in self.series_list:
             self.graph_fd.removeSeries(si)
             self.graph_td.removeSeries(si)
@@ -416,6 +393,8 @@ class Form(qtw.QDialog):
         pass
 
     def change_lim(self):
+        #updates the graph limits
+
         print("Updated Limits")
         #graph 1
         if self.xlim_min_in_fd.text()!='-' and self.xlim_min_in_td.text()!='':
@@ -438,26 +417,25 @@ class Form(qtw.QDialog):
             self.axis_y_td.setMax(float(self.ylim_max_in_td.text()))
 
     def periodic_refresh(self):
-        
-        #print(f"Actual FPS = {1/(time.time()-self.t0)}")
+        # this 'updates' the plot when the timer runs out
+        # re-queries pna for data, updates a few other things
+
         self.t0=time.time()
 
         #s11
         if self.s11==1:
-            s11=get_sparam(self.pm, '1')
+            s11=self.pm.get_sparam('1')
             if self.norm_tog==1:
                 y_stream_a=20*np.log10(np.abs(s11))-20*np.log10(np.abs(self.s11_ref))
-                #y_stream_a=20*np.log10(np.abs(s11-self.s11_ref))
             else:
                 y_stream_a=20*np.log10(np.abs(s11))
             y_stream_c=(np.abs(np.fft.ifft(s11)))
 
         #s21
         if self.s21==1:
-            s21=get_sparam(self.pm, '2')
+            s21=self.pm.get_sparam('2')
             if self.norm_tog==1:
                 y_stream_b=20*np.log10(np.abs(s21))-20*np.log10(np.abs(self.s21_ref))
-                #y_stream_b=20*np.log10(np.abs(s21-self.s21_ref))
             else:
                 y_stream_b=20*np.log10(np.abs(s21))
             y_stream_d=(np.abs(np.fft.ifft(s21)))
@@ -478,11 +456,12 @@ class Form(qtw.QDialog):
 
         self.meas_fps=(self.meas_fps+(1/(time.time()-self.t0)))/2
         self.fps_display.setText(f"Figure Refresh Rate: {np.around(self.fps)} fps \nMeasurement Refresh Rate: {np.around(self.meas_fps)} fps")
-        #print(f"Max Possible FPS = {1/(time.time()-self.t0)}")
 
         pass
 
     def avg_toggle(self):
+        # turns averaging on and off - writes command to pna
+
         if self.avg==0:
             self.avg=1
             if self.avg_factor.text().isnumeric:
@@ -495,26 +474,33 @@ class Form(qtw.QDialog):
             self.avg_bt.setStyleSheet('background-color: 0x82B39;')
 
     def norm_toggle(self):
+        # implememnt basic binary toggling functionality
+
         if self.norm_tog==1:
             self.norm_tog=0
         elif self.norm_tog==0:
             self.norm_tog=1
 
     def add_norm(self):
+        # adds a normalisation measurment - this measurement is subtracted from data queried from pna
+
         self.norm_path,_=qtw.QFileDialog.getOpenFileName(self, "Select File")
-        #self.graph.setTitle(self.plot_path)
         if self.norm_path != '':
             data=np.loadtxt(self.norm_path,skiprows=1)
             self.s11_ref=data[:,1]+1j*data[:,2]
             self.s21_ref=data[:,3]+1j*data[:,4]
             
     def sense_avg_fac(self):
+        # writes new averaging factor to pna
+
         if self.avg_factor.text().isnumeric():
             self.pm.pna.write(f"SENS:AVER:COUN {self.avg_factor.text()}")
     
     def save_data(self):
-        s11=get_sparam(self.pm, '1')
-        s21=get_sparam(self.pm, '2')
+        # saves pna data to text file
+
+        s11=self.pm.get_sparam('1')
+        s21=self.pm.get_sparam('2')
         f=np.linspace(220,330,1001)
         s11_re=np.real(s11)
         s11_im=np.imag(s11)
@@ -531,6 +517,8 @@ class Form(qtw.QDialog):
             np.savetxt(save_path,data_out,header=head)
 
     def pad_toggle(self):
+        # turns frequency domain padding on and off
+
         if self.padding==0:
             self.padding=1
             self.pad_bt.setStyleSheet('background-color: green;')
@@ -539,10 +527,14 @@ class Form(qtw.QDialog):
             self.pad_bt.setStyleSheet('background-color: 0x82B39;')
 
     def sense_pad_fac(self):
+        # when padding factor is updated change values
+
         if self.pad_factor.text().isnumeric():
             self.padding=float(self.pad_factor.text())
 
     def s11_tog(self):
+        # turns s11 display on/off - updates fps to reflect this
+
         if self.s11==0:
             self.s11=1
             self.s11_bt.setStyleSheet('background-color: green;')
@@ -558,6 +550,8 @@ class Form(qtw.QDialog):
         self.timer.setInterval(1000/self.fps)
 
     def s21_tog(self):
+        # turns s21 display on/off - updates fps to reflect this
+
         if self.s21==0:
             self.s21=1
             self.s21_bt.setStyleSheet('background-color: green;')
@@ -581,21 +575,7 @@ if __name__ == "__main__":
     if style==1:
         app.setStyle('Fusion')
 
-        dark_palette = qtg.QPalette()
-
-        dark_palette.setColor(qtg.QPalette.Window, qtg.QColor(53, 53, 53))
-        dark_palette.setColor(qtg.QPalette.WindowText, qtc.Qt.white)
-        dark_palette.setColor(qtg.QPalette.Base, qtg.QColor(25, 25, 25))
-        dark_palette.setColor(qtg.QPalette.AlternateBase, qtg.QColor(53, 53, 53))
-        dark_palette.setColor(qtg.QPalette.ToolTipBase, qtc.Qt.white)
-        dark_palette.setColor(qtg.QPalette.ToolTipText, qtc.Qt.white)
-        dark_palette.setColor(qtg.QPalette.Text, qtc.Qt.white)
-        dark_palette.setColor(qtg.QPalette.Button, qtg.QColor(53, 53, 53))
-        dark_palette.setColor(qtg.QPalette.ButtonText, qtc.Qt.white)
-        dark_palette.setColor(qtg.QPalette.BrightText, qtc.Qt.red)
-        dark_palette.setColor(qtg.QPalette.Link, qtg.QColor(42, 130, 218))
-        dark_palette.setColor(qtg.QPalette.Highlight, qtg.QColor(42, 130, 218))
-        dark_palette.setColor(qtg.QPalette.HighlightedText, qtc.Qt.black)
+        dark_palette = dark_pal()
 
         app.setPalette(dark_palette)
         app.setApplicationDisplayName("PyPNA")
