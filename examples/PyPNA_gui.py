@@ -1,6 +1,7 @@
 ###########################################################
 #     GUI for displaying real time s-par measurements     #
 #           Harry Lees & Bryce Chung - Dec 2021           #
+#       Install PyPNA: python3 -m pip install pypn        #
 ###########################################################
 
 import sys

@@ -21,7 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Bryce-AC/PyPNA",
     author="Bryce Chung",
-    author_email="bryce.chung@student.adelaide.edu.au",
+    author_email="bryce.chung@adelaide.edu.au",
     license="GPLv3",
     classifiers=[
         "Programming Language :: Python :: 3.9"
