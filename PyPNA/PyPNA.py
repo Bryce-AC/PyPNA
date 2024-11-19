@@ -32,7 +32,8 @@ class PyPNA:
         # inputs: s_sparam, int s11->1, s21->2
 
         self.pna.write(f"CALC:PAR:EXT 'ch1_{s_param}', 'S{s_param}1'")
-        self.pna.write(f"DISP:WIND:TRAC1:FEED 'ch1_{s_param}'")
+        self.pna.write(f"DISP:WIND:TRAC{self.channels_open.size}:FEED 'ch1_{s_param}'")
+        self.pna.write("FORM:DATA REAL,32")
 
         self.channels_open=np.append(self.channels_open,np.array(s_param))
 
@@ -57,24 +58,14 @@ class PyPNA:
         # inputs: s_param - string (s11, s21)
         # returns: complex np array same length as s-par data
 
-        if np.any(np.isin(self.channels_open,s_param)):
+        if np.any(np.isin(self.channels_open, s_param)):
             self.pna.write(f"CALC:PAR:SEL 'ch1_{s_param}'")
-            self.pna.write("FORM:DATA ASCII")
-            self.pna.write("CALC:DATA? SDATA")
-            data = self.pna.read()
-            data = data.split(',')
-            real = []
-            imag = []
-            for point in range(len(data)):
-                if point % 2 == 0:
-                    real.append(float(data[point]))
-                else:
-                    imag.append(float(data[point]))
-        
-            real=np.array(real)
-            imag=np.array(imag)
+            data = self.pna.query_binary_values("CALC:DATA? SDATA", datatype="f", container=np.array,
+                                                is_big_endian=True, header_fmt='ieee')
+            s11_arr = np.array(data)
+            s11_re = np.reshape(s11_arr, (-1, 2))
 
-            return real+1j*imag
+            return s11_re[:, 0] + 1j * s11_re[:, 1]
         else:
             print("S-param requested hasn't been added, use add_sparam(s_param) to open add it")
             print(f"List: {self.channels_open}")
